@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Diwali Rocket Run: CDC2 Chennai to BDC14 Bangalore</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- 3D WebGL Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Immersion Screen Effects -->
+    <div id="screen-vignette"></div>
+    <div id="damage-flash"></div>
+    <div id="boost-speed-lines"></div>
+
+    <!-- Top HUD Overlay -->
+    <div id="hud-overlay">
+      <!-- Route Progress Card -->
+      <div class="hud-top-row">
+        <div class="route-progress-card glass-panel">
+          <div class="route-header">
+            <span>🏁 CDC2 Chennai</span>
+            <span>DIWALI FLIGHT ROUTE (NH48)</span>
+            <span>BDC14 Bangalore 🎯</span>
+          </div>
+
+          <div class="route-track-container">
+            <div class="route-track-bg">
+              <div id="route-fill" class="route-track-fill"></div>
+            </div>
+
+            <div class="milestone-nodes">
+              <div class="milestone-node current">
+                <div class="milestone-dot"></div>
+                <div class="milestone-name">Chennai</div>
+              </div>
+              <div class="milestone-node">
+                <div class="milestone-dot"></div>
+                <div class="milestone-name">Vellore</div>
+              </div>
+              <div class="milestone-node">
+                <div class="milestone-dot"></div>
+                <div class="milestone-name">Krishnagiri</div>
+              </div>
+              <div class="milestone-node">
+                <div class="milestone-dot"></div>
+                <div class="milestone-name">Hosur</div>
+              </div>
+              <div class="milestone-node">
+                <div class="milestone-dot"></div>
+                <div class="milestone-name">BDC14</div>
+              </div>
+            </div>
+
+            <div id="rocket-marker" class="rocket-runner-marker">🚀</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry & Gauges Row -->
+      <div class="hud-telemetry-row">
+        <!-- Gauges: Fuel & Health -->
+        <div class="status-gauges">
+          <!-- Fuel Gauge -->
+          <div class="gauge-card glass-panel">
+            <div class="gauge-icon">🔥</div>
+            <div class="gauge-content">
+              <span class="gauge-label">Fuel</span>
+              <div class="fuel-bar-outer">
+                <div id="fuel-fill" class="fuel-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Health Gauge -->
+          <div class="gauge-card glass-panel">
+            <div class="gauge-icon">❤️</div>
+            <div class="gauge-content">
+              <span class="gauge-label">Health</span>
+              <div class="health-hearts">
+                <span class="heart">❤️</span>
+                <span class="heart">❤️</span>
+                <span class="heart">❤️</span>
+              </div>
+            </div>
+            <span id="shield-status" class="shield-badge" style="display: none;">🛡️ SHIELD</span>
+          </div>
+        </div>
+
+        <!-- Stats & Controls -->
+        <div class="stats-panel">
+          <div class="stat-item glass-panel">
+            <span>🪙</span>
+            <span id="coin-val" class="stat-val">0</span>
+          </div>
+
+          <div class="stat-item glass-panel">
+            <span>⚡</span>
+            <span id="speed-val" class="stat-val">0</span>
+            <span style="font-size: 0.65rem; color: #aaa;">km/h</span>
+          </div>
+
+          <div class="stat-item glass-panel">
+            <span>📍</span>
+            <span id="distance-val" class="stat-val">0 / 350</span>
+            <span style="font-size: 0.65rem; color: #aaa;">km</span>
+          </div>
+
+          <div class="stat-item glass-panel">
+            <span>🏆</span>
+            <span id="score-val" class="stat-val">0</span>
+          </div>
+
+          <div class="hud-buttons">
+            <button id="btn-help" class="btn-icon" title="How to Play / Instructions">❓</button>
+            <button id="btn-audio" class="btn-icon" title="Toggle Sound">🔊</button>
+            <button id="btn-pause" class="btn-icon" title="Pause Game">⏸️</button>
+            <button id="btn-leaderboard" class="btn-icon" title="Leaderboard">📜</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- In-Flight Milestone Toast Banner -->
+    <div id="milestone-toast" class="glass-panel">
+      <div id="toast-city" class="toast-city">APPROACHING VELLORE</div>
+      <div class="toast-sub">✨ Keep Rocket Flying to BDC14 Bangalore! ✨</div>
+    </div>
+
+    <!-- Active Power-ups Bar -->
+    <div id="active-powerups-bar"></div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="touch-controls">
+      <div id="touch-joystick-base" class="touch-zone">
+        <div id="touch-joystick-thumb"></div>
+      </div>
+      <div class="touch-action-buttons">
+        <button id="touch-thrust-btn" class="touch-btn">
+          🚀
+          <span>THRUST</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         MODALS & OVERLAYS
+         ===================================================================== -->
+
+    <!-- 1. Start Screen Modal -->
+    <div id="start-modal" class="modal-backdrop">
+      <div class="modal-card">
+        <h1 class="modal-title">DIWALI ROCKET RUN</h1>
+        <h3 class="modal-subtitle">CDC2 CHENNAI ➔ BDC14 BANGALORE</h3>
+
+        <div class="story-box">
+          🌟 <strong>Mission Briefing:</strong> It is Diwali night! Launch your festive rocket from <strong>CDC2 Chennai</strong> and pilot it along the highway through <strong>Vellore</strong>, <strong>Krishnagiri</strong>, and <strong>Hosur</strong> all the way to <strong>BDC14 Bangalore</strong>. Collect blessings and power-ups, manage your fuel, avoid dangerous hazards, and trigger the grand celebration!
+        </div>
+
+        <div class="instructions-grid">
+          <!-- Card 1: Controls -->
+          <div class="instruction-item">
+            <h4>🎮 Flight Controls</h4>
+            <div class="item-entry"><span class="entry-icon">🚀</span><div><strong>Space / W / Up:</strong> Climb & Thrust</div></div>
+            <div class="item-entry"><span class="entry-icon">⬇️</span><div><strong>S / Down:</strong> Dive</div></div>
+            <div class="item-entry"><span class="entry-icon">↔️</span><div><strong>A / D or Left / Right:</strong> Bank & Steer</div></div>
+            <div class="item-entry"><span class="entry-icon">🖱️</span><div><strong>Mouse / Touch:</strong> Drag & hold to steer/thrust</div></div>
+          </div>
+
+          <!-- Card 2: Milestones -->
+          <div class="instruction-item">
+            <h4>🎯 350 KM Journey</h4>
+            <div class="item-entry"><span class="entry-icon">🏁</span><div><strong>0 km:</strong> CDC2 Chennai (Launch)</div></div>
+            <div class="item-entry"><span class="entry-icon">🏰</span><div><strong>140 km:</strong> Vellore Fort</div></div>
+            <div class="item-entry"><span class="entry-icon">⛰️</span><div><strong>250 km:</strong> Krishnagiri Hills</div></div>
+            <div class="item-entry"><span class="entry-icon">🌉</span><div><strong>310 km:</strong> Hosur Gateway</div></div>
+            <div class="item-entry"><span class="entry-icon">🎉</span><div><strong>350 km:</strong> BDC14 Bangalore (Victory!)</div></div>
+          </div>
+
+          <!-- Card 3: What to Capture -->
+          <div class="instruction-item capture-card">
+            <h4>✅ WHAT TO CAPTURE (COLLECT)</h4>
+            <div class="item-entry"><span class="entry-icon">🪙</span><div><strong>Lakshmi Coins:</strong> +250 Points &amp; +5% Fuel Top-Up!</div></div>
+            <div class="item-entry"><span class="entry-icon">🚀</span><div><strong>Nitro Propellant:</strong> Refills +50% Fuel &amp; Turbo Boost!</div></div>
+            <div class="item-entry"><span class="entry-icon">🪔</span><div><strong>Diya Shield:</strong> 8 Seconds of Complete Invulnerability!</div></div>
+            <div class="item-entry"><span class="entry-icon">✨</span><div><strong>Sparkler Boost:</strong> 2X Score Multiplier &amp; Speed Rush!</div></div>
+          </div>
+
+          <!-- Card 4: What to Avoid -->
+          <div class="instruction-item avoid-card">
+            <h4>❌ WHAT TO AVOID (HAZARDS)</h4>
+            <div class="item-entry"><span class="entry-icon">🌧️</span><div><strong>Rain Clouds:</strong> Extinguishes thrust &amp; inflicts damage!</div></div>
+            <div class="item-entry"><span class="entry-icon">🐦</span><div><strong>Flapping Birds:</strong> Physical crash hazard (-1 Heart)!</div></div>
+            <div class="item-entry"><span class="entry-icon">🏙️</span><div><strong>Skyscrapers:</strong> Concrete tower collision (-1 Heart)!</div></div>
+            <div class="item-entry"><span class="entry-icon">⚡</span><div><strong>Electric Wires:</strong> Dangerous high-voltage arcs (-1 Heart)!</div></div>
+            <div class="item-entry"><span class="entry-icon">🌀</span><div><strong>Wind Gusts:</strong> Violent turbulence pushes you off course!</div></div>
+          </div>
+        </div>
+
+        <button id="btn-start" class="btn-festive">IGNITE ROCKET 🚀</button>
+      </div>
+    </div>
+
+    <!-- 2. Pause Modal -->
+    <div id="pause-modal" class="modal-backdrop hidden">
+      <div class="modal-card" style="max-width: 480px;">
+        <h2 class="modal-title">GAME PAUSED</h2>
+        <p style="margin-bottom: 20px; color: #ccc;">Flight holding steady over the festive highway corridor.</p>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
+          <button id="btn-resume" class="btn-festive" style="width: 240px;">RESUME FLIGHT</button>
+          <button id="btn-pause-help" class="btn-festive btn-secondary" style="width: 240px; margin-left: 0;">HOW TO PLAY</button>
+          <button id="btn-restart" class="btn-festive btn-secondary" style="width: 240px; margin-left: 0;">RESTART RUN</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Game Over Modal -->
+    <div id="gameover-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <h2 class="modal-title" style="color: #ff4d6d;">FLIGHT TERMINATED</h2>
+        <p id="gameover-reason" style="color: #ffb703; margin-bottom: 16px; font-weight: 600;"></p>
+
+        <div class="stats-summary-card">
+          <div class="stat-row">
+            <span class="stat-label">Distance Covered:</span>
+            <span id="stat-go-distance" style="color: #ffd700;"></span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Lakshmi Coins Collected:</span>
+            <span id="stat-go-coins" style="color: #ffd700;"></span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Total Flight Score:</span>
+            <span id="stat-go-score"></span>
+          </div>
+        </div>
+
+        <div class="player-input-row">
+          <input type="text" id="player-name-go" class="player-input" placeholder="Enter Pilot Name" maxlength="15">
+          <button id="btn-save-score" class="btn-festive" style="padding: 10px 22px; font-size: 0.95rem;">SAVE SCORE</button>
+        </div>
+
+        <button id="btn-retry" class="btn-festive">LAUNCH AGAIN 🚀</button>
+      </div>
+    </div>
+
+    <!-- 4. Victory Celebration Modal -->
+    <div id="victory-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="victory-firework-badge">🎆 🪔 🎆</div>
+        <h1 class="modal-title" style="color: #00f5d4;">HAPPY DIWALI!</h1>
+        <h3 class="modal-subtitle">WELCOME TO BDC14 BANGALORE</h3>
+
+        <p style="margin-bottom: 16px; font-size: 0.95rem; color: #e0e0e0;">
+          Spectacular flight! You delivered the festive spirit all the way from CDC2 Chennai to BDC14 Bangalore!
+        </p>
+
+        <div class="stats-summary-card">
+          <div class="stat-row">
+            <span class="stat-label">Flight Time:</span>
+            <span id="stat-vic-time" style="color: #00f5d4;"></span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Fuel Remaining Bonus:</span>
+            <span id="stat-vic-fuel" style="color: #ffd700;"></span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Coins Collected:</span>
+            <span id="stat-vic-coins" style="color: #ffd700;"></span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">Final Celebration Score:</span>
+            <span id="stat-vic-score"></span>
+          </div>
+        </div>
+
+        <div class="player-input-row">
+          <input type="text" id="player-name-vic" class="player-input" placeholder="Enter Champion Name" maxlength="15">
+          <button id="btn-save-victory" class="btn-festive" style="padding: 10px 22px; font-size: 0.95rem;">SAVE SCORE</button>
+        </div>
+
+        <button id="btn-replay" class="btn-festive">FLY AGAIN 🚀</button>
+      </div>
+    </div>
+
+    <!-- 5. Leaderboard Modal -->
+    <div id="leaderboard-modal" class="modal-backdrop hidden">
+      <div class="modal-card" style="max-width: 500px;">
+        <h2 class="modal-title">FESTIVE PILOTS</h2>
+        <h4 class="modal-subtitle">TOP RUNS LEADERBOARD</h4>
+
+        <div id="leaderboard-list" class="leaderboard-list"></div>
+
+        <button id="btn-close-leaderboard" class="btn-festive" style="margin-top: 10px;">CLOSE</button>
+      </div>
+    </div>
+
+    <!-- 6. General Instructions Modal (What to Capture vs Avoid) -->
+    <div id="instructions-modal" class="modal-backdrop hidden">
+      <div class="modal-card" style="max-width: 650px;">
+        <h2 class="modal-title">FLIGHT MANUAL</h2>
+        <h4 class="modal-subtitle">WHAT TO CAPTURE &amp; WHAT TO AVOID</h4>
+
+        <div class="instructions-grid" style="margin-top: 14px;">
+          <!-- What to Capture -->
+          <div class="instruction-item capture-card">
+            <h4>✅ WHAT TO CAPTURE (COLLECT)</h4>
+            <div class="item-entry"><span class="entry-icon">🪙</span><div><strong>Lakshmi Coins:</strong> +250 Points &amp; +5% Fuel Top-Up!</div></div>
+            <div class="item-entry"><span class="entry-icon">🚀</span><div><strong>Nitro Propellant:</strong> Refills +50% Fuel &amp; Turbo Rush!</div></div>
+            <div class="item-entry"><span class="entry-icon">🪔</span><div><strong>Diya Shield:</strong> 8s Complete Invulnerability Barrier!</div></div>
+            <div class="item-entry"><span class="entry-icon">✨</span><div><strong>Sparkler Boost:</strong> 2X Score Multiplier &amp; Speed Rush!</div></div>
+          </div>
+
+          <!-- What to Avoid -->
+          <div class="instruction-item avoid-card">
+            <h4>❌ WHAT TO AVOID (HAZARDS)</h4>
+            <div class="item-entry"><span class="entry-icon">🌧️</span><div><strong>Rain Clouds:</strong> Extinguishes thrust &amp; inflicts damage!</div></div>
+            <div class="item-entry"><span class="entry-icon">🐦</span><div><strong>Flapping Birds:</strong> Physical crash hazard (-1 Heart)!</div></div>
+            <div class="item-entry"><span class="entry-icon">🏙️</span><div><strong>Skyscrapers:</strong> High-rise concrete crash (-1 Heart)!</div></div>
+            <div class="item-entry"><span class="entry-icon">⚡</span><div><strong>Electric Wires:</strong> High-voltage spark shock (-1 Heart)!</div></div>
+            <div class="item-entry"><span class="entry-icon">🌀</span><div><strong>Wind Gusts:</strong> Violent turbulence tosses rocket off-course!</div></div>
+          </div>
+        </div>
+
+        <button id="btn-close-instructions" class="btn-festive">RETURN TO GAME</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts: 3D WebGL Engine & Game Modules -->
+  <script src="js/three.min.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/particles3d.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/entities3d.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

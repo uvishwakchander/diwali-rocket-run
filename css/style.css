@@ -864,6 +864,38 @@ html, body {
   to { transform: translateY(-8px) scale(1.1); }
 }
 
+/* GitHub Source Button */
+.btn-github-source {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 26px;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: rgba(30, 18, 60, 0.85);
+  border: 1px solid var(--primary-gold);
+  border-radius: 30px;
+  text-decoration: none;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.btn-github-source:hover {
+  background: rgba(255, 215, 0, 0.25);
+  color: var(--primary-gold);
+  border-color: #ffffff;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 25px rgba(255, 215, 0, 0.6);
+}
+
+.btn-github-source svg {
+  fill: currentColor;
+}
+
 /* Responsive Rules */
 @media (max-width: 900px) {
   #hud-overlay {

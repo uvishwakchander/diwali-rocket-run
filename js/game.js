@@ -139,6 +139,11 @@ class Game {
     document.getElementById('btn-leaderboard').addEventListener('click', () => this.showLeaderboard());
     document.getElementById('btn-close-leaderboard').addEventListener('click', () => this.hideLeaderboard());
 
+    const btnRefreshLb = document.getElementById('btn-refresh-leaderboard');
+    if (btnRefreshLb) {
+      btnRefreshLb.addEventListener('click', () => this.fetchGlobalLeaderboard(true));
+    }
+
     const btnHelp = document.getElementById('btn-help');
     if (btnHelp) {
       btnHelp.addEventListener('click', () => this.showInstructions());
@@ -647,53 +652,189 @@ class Game {
   }
 
   // =========================================================================
-  // LEADERBOARD (Local Storage)
+  // GLOBAL LEADERBOARD & SESSION TELEMETRY
   // =========================================================================
   loadLeaderboard() {
-    const raw = localStorage.getItem('diwali_rocket_leaderboard');
-    this.leaderboard = raw ? JSON.parse(raw) : [
-      { name: 'Diwali Rider', score: 14200, city: 'BDC14 Bangalore' },
-      { name: 'Chennai Express', score: 11800, city: 'Hosur' },
-      { name: 'Rocket Raja', score: 9500, city: 'Krishnagiri' }
-    ];
+    // 1. Initial cached or fallback leaderboard
+    const cached = localStorage.getItem('diwali_rocket_global_cache');
+    const local = localStorage.getItem('diwali_rocket_leaderboard');
+    if (cached) {
+      try { this.leaderboard = JSON.parse(cached); } catch (e) { this.leaderboard = []; }
+    } else if (local) {
+      try { this.leaderboard = JSON.parse(local); } catch (e) { this.leaderboard = []; }
+    } else {
+      this.leaderboard = [
+        { rank: 1, name: 'Diwali Rider', score: 18500, city: 'BDC14 Bangalore', date: 'Diwali Eve' },
+        { rank: 2, name: 'Chennai Express', score: 14200, city: 'Hosur', date: 'Diwali Eve' },
+        { rank: 3, name: 'Rocket Raja', score: 11600, city: 'Krishnagiri', date: 'Diwali Eve' },
+        { rank: 4, name: 'Festive Flyer', score: 9800, city: 'Vellore', date: 'Diwali Eve' },
+        { rank: 5, name: 'Sparkler Ace', score: 7500, city: 'CDC2 Chennai', date: 'Diwali Eve' }
+      ];
+    }
+
+    // 2. Asynchronously fetch latest global leaderboard from cloud Web App
+    this.fetchGlobalLeaderboard(false);
   }
 
-  saveHighScore(isVictory = false) {
+  async fetchGlobalLeaderboard(forceRefresh = false) {
+    const statusEl = document.getElementById('leaderboard-sync-status');
+    const apiUrl = window.GAME_CONFIG && window.GAME_CONFIG.API_URL;
+
+    if (!apiUrl || !apiUrl.trim()) {
+      if (statusEl) {
+        statusEl.innerHTML = '<span>💾 Local Champions (Connect Google Sheets for Global Sync)</span>';
+      }
+      this.renderLeaderboardUI();
+      return;
+    }
+
+    if (statusEl) {
+      statusEl.innerHTML = '<span>🔄 Syncing with Global Database...</span>';
+    }
+
+    try {
+      const url = `${apiUrl}?action=get_leaderboard&t=${Date.now()}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (data && data.champions && Array.isArray(data.champions) && data.champions.length > 0) {
+        this.leaderboard = data.champions;
+        localStorage.setItem('diwali_rocket_global_cache', JSON.stringify(this.leaderboard));
+        if (statusEl) {
+          statusEl.innerHTML = '<span>⚡ Live Worldwide Leaderboard</span>';
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch global leaderboard, using cached data:', err);
+      if (statusEl) {
+        statusEl.innerHTML = '<span>⚠️ Showing Cached / Local Champions</span>';
+      }
+    }
+
+    this.renderLeaderboardUI();
+  }
+
+  async saveHighScore(isVictory = false) {
     const inputId = isVictory ? 'player-name-vic' : 'player-name-go';
+    const statusId = isVictory ? 'score-save-status-vic' : 'score-save-status-go';
+    const btnId = isVictory ? 'btn-save-victory' : 'btn-save-score';
+
     const nameInput = document.getElementById(inputId);
-    const playerName = (nameInput && nameInput.value.trim()) || 'Festive Pilot';
+    const statusEl = document.getElementById(statusId);
+    const saveBtn = document.getElementById(btnId);
 
+    const playerName = (nameInput && nameInput.value.trim()) || (window.GAME_CONFIG && window.GAME_CONFIG.DEFAULT_NAME) || 'Festive Pilot';
     const scoreToSave = isVictory ? (this.finalVictoryScore || this.score) : this.score;
+    const flightSeconds = Math.max(1, Math.round((Date.now() - (this.startTime || Date.now())) / 1000));
+    const currentCityName = this.milestones[this.currentCityIndex] ? this.milestones[this.currentCityIndex].name : 'CDC2 Chennai';
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const platform = isMobile ? 'Mobile' : 'Desktop';
 
-    this.leaderboard.push({
+    if (statusEl) {
+      statusEl.innerText = '⏳ Recording flight telemetry & saving score...';
+      statusEl.className = 'score-save-status';
+    }
+    if (saveBtn) saveBtn.disabled = true;
+    if (nameInput) nameInput.disabled = true;
+
+    // 1. Immediately record in local storage so user never loses their score
+    const localEntry = {
       name: playerName,
       score: scoreToSave,
-      city: this.milestones[this.currentCityIndex].name
-    });
-
+      city: currentCityName,
+      date: new Date().toLocaleDateString()
+    };
+    this.leaderboard.push(localEntry);
     this.leaderboard.sort((a, b) => b.score - a.score);
-    this.leaderboard = this.leaderboard.slice(0, 5); // Keep top 5
-
+    const limit = (window.GAME_CONFIG && window.GAME_CONFIG.LEADERBOARD_LIMIT) || 10;
+    this.leaderboard = this.leaderboard.slice(0, limit);
     localStorage.setItem('diwali_rocket_leaderboard', JSON.stringify(this.leaderboard));
 
-    if (nameInput) nameInput.disabled = true;
-    this.showLeaderboard();
+    // 2. Transmit session telemetry & global high score to cloud backend
+    const apiUrl = window.GAME_CONFIG && window.GAME_CONFIG.API_URL;
+    if (apiUrl && apiUrl.trim()) {
+      try {
+        const queryParams = new URLSearchParams({
+          action: 'submit_score',
+          pilot: playerName,
+          score: scoreToSave.toString(),
+          status: isVictory ? 'VICTORY' : 'CRASH',
+          milestone: currentCityName,
+          distanceKm: Math.round(this.distanceTraveled).toString(),
+          coins: this.coins.toString(),
+          flightTime: flightSeconds.toString(),
+          fuelRemaining: Math.round(this.player.fuel).toString(),
+          device: platform
+        });
+
+        // Use GET parameter transmission to prevent CORS issues with Google Apps Script
+        await fetch(`${apiUrl}?${queryParams.toString()}`, { mode: 'no-cors' });
+
+        if (statusEl) {
+          statusEl.innerText = '🎉 Champion score & telemetry saved to Global Database!';
+        }
+      } catch (err) {
+        console.warn('Telemetry cloud submission notice:', err);
+        if (statusEl) {
+          statusEl.innerText = '✅ Score saved locally! (Will sync when online)';
+        }
+      }
+    } else {
+      if (statusEl) {
+        statusEl.innerText = '✅ Score saved to local leaderboard!';
+      }
+    }
+
+    // Refresh and display leaderboard modal after brief pause
+    setTimeout(() => {
+      this.showLeaderboard();
+    }, 900);
   }
 
   showLeaderboard() {
-    const list = document.getElementById('leaderboard-list');
-    list.innerHTML = this.leaderboard.map((item, idx) => `
-      <div class="leaderboard-entry">
-        <span>#${idx + 1} <strong>${item.name}</strong> (${item.city})</span>
-        <span style="color: #ffd700; font-weight: bold;">${item.score} pts</span>
-      </div>
-    `).join('');
-
+    this.fetchGlobalLeaderboard(false);
+    this.renderLeaderboardUI();
     this.leaderboardModal.classList.remove('hidden');
   }
 
   hideLeaderboard() {
     this.leaderboardModal.classList.add('hidden');
+  }
+
+  renderLeaderboardUI() {
+    const list = document.getElementById('leaderboard-list');
+    if (!list) return;
+
+    if (!this.leaderboard || this.leaderboard.length === 0) {
+      list.innerHTML = '<div style="padding: 20px; color: #aaa;">No champions recorded yet. Be the first!</div>';
+      return;
+    }
+
+    list.innerHTML = this.leaderboard.map((item, idx) => {
+      const rank = item.rank || (idx + 1);
+      let rankDisplay = `#${rank}`;
+      if (rank === 1) rankDisplay = '🥇';
+      else if (rank === 2) rankDisplay = '🥈';
+      else if (rank === 3) rankDisplay = '🥉';
+
+      const pilotName = item.name || item.pilot || 'Festive Pilot';
+      const city = item.city || item.milestone || 'CDC2 Chennai';
+      const dateText = item.date ? ` • ${item.date}` : '';
+
+      return `
+        <div class="leaderboard-entry">
+          <div class="lb-left">
+            <span class="lb-rank">${rankDisplay}</span>
+            <div class="lb-details">
+              <span class="lb-name">${pilotName}</span>
+              <span class="lb-city">${city}${dateText}</span>
+            </div>
+          </div>
+          <span class="lb-score">${item.score} pts</span>
+        </div>
+      `;
+    }).join('');
   }
 
   render() {

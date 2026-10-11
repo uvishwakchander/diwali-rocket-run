@@ -249,6 +249,7 @@
           <input type="text" id="player-name-go" class="player-input" placeholder="Enter Pilot Name" maxlength="15">
           <button id="btn-save-score" class="btn-festive" style="padding: 10px 22px; font-size: 0.95rem;">SAVE SCORE</button>
         </div>
+        <div id="score-save-status-go" class="score-save-status"></div>
 
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 14px;">
           <button id="btn-retry" class="btn-festive">LAUNCH AGAIN 🚀</button>
@@ -296,6 +297,7 @@
           <input type="text" id="player-name-vic" class="player-input" placeholder="Enter Champion Name" maxlength="15">
           <button id="btn-save-victory" class="btn-festive" style="padding: 10px 22px; font-size: 0.95rem;">SAVE SCORE</button>
         </div>
+        <div id="score-save-status-vic" class="score-save-status"></div>
 
         <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 14px;">
           <button id="btn-replay" class="btn-festive">FLY AGAIN 🚀</button>
@@ -309,15 +311,22 @@
       </div>
     </div>
 
-    <!-- 5. Leaderboard Modal -->
+    <!-- 5. Leaderboard Modal (Global Champions) -->
     <div id="leaderboard-modal" class="modal-backdrop hidden">
-      <div class="modal-card" style="max-width: 500px;">
-        <h2 class="modal-title">FESTIVE PILOTS</h2>
-        <h4 class="modal-subtitle">TOP RUNS LEADERBOARD</h4>
+      <div class="modal-card" style="max-width: 520px;">
+        <h2 class="modal-title">🌍 GLOBAL CHAMPIONS</h2>
+        <h4 class="modal-subtitle">DIWALI PILOTS HALL OF FAME</h4>
+
+        <div id="leaderboard-sync-status" class="leaderboard-status">
+          <span>⚡ Live Worldwide Leaderboard</span>
+        </div>
 
         <div id="leaderboard-list" class="leaderboard-list"></div>
 
-        <button id="btn-close-leaderboard" class="btn-festive" style="margin-top: 10px;">CLOSE</button>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 14px;">
+          <button id="btn-refresh-leaderboard" class="btn-festive btn-secondary">🔄 REFRESH</button>
+          <button id="btn-close-leaderboard" class="btn-festive">CLOSE</button>
+        </div>
       </div>
     </div>
 
@@ -356,6 +365,7 @@
 
   <!-- Scripts: 3D WebGL Engine & Game Modules -->
   <script src="js/three.min.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/particles3d.js"></script>
   <script src="js/models.js"></script>

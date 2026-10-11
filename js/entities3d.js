@@ -24,7 +24,7 @@ class PlayerRocket {
     this.vx = 0;
     this.vy = 0;
     this.vz = 0;
-    this.baseSpeed = 38;
+    this.baseSpeed = 40;
     this.currentSpeed = this.baseSpeed;
     this.gravity = 18;
     this.thrustPower = 28;
@@ -215,7 +215,7 @@ class EntityManager3D {
 
     // Next spawn distance trigger
     this.nextSpawnZ = -60;
-    this.spawnInterval = 28; // Spawns every 28 units
+    this.spawnInterval = 24; // Spawns every 24 units for lively 1-minute sprint
   }
 
   reset() {

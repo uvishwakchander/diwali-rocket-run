@@ -12,10 +12,10 @@ class Game {
     this.state = 'START';
 
     // Route & Journey configuration
-    // 350 km mapped to virtual distance along -Z axis
+    // 350 km scaled to ~1 minute (60 seconds) arcade flight
     this.totalKm = 350;
-    this.zScale = 10; // 1 km = 10 units
-    this.totalZ = this.totalKm * this.zScale; // 3500 units
+    this.zScale = 6.85; // 350 km * 6.85 = ~2400 units (~60 seconds at 40 units/s)
+    this.totalZ = this.totalKm * this.zScale;
 
     this.milestones = [
       { km: 0, name: 'CDC2 Chennai', key: 'chennai', z: 0 },

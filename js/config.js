@@ -17,7 +17,7 @@
 
 window.GAME_CONFIG = {
   // Global Leaderboard & Telemetry Web App URL
-  API_URL: "",
+  API_URL: "https://script.google.com/macros/s/AKfycbzBRoQZShYAsXAOtqwggfEKfjvVfPWeBClorOE4-PZQ8kFQzY3e4UwHlEaGrSpS-LOd1w/exec",
 
   // Leaderboard display settings
   LEADERBOARD_LIMIT: 10,

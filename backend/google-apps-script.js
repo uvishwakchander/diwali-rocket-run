@@ -108,7 +108,8 @@ function doGet(e) {
     return handleSessionSubmission(params);
   }
 
-  return getLeaderboardResponse();
+  const limit = parseInt(params.limit, 10) || 1000;
+  return getLeaderboardResponse(limit);
 }
 
 /**
@@ -150,6 +151,7 @@ function handleSessionSubmission(data) {
   const flightTime = data.flightTime || data.time || "0";
   const fuel = data.fuelRemaining || data.fuel || "0";
   const device = (data.device || "Browser").toString();
+  const maxLimit = parseInt(data.limit, 10) || 1000;
 
   // 1. Append session telemetry row
   if (telemSheet) {
@@ -192,8 +194,8 @@ function handleSessionSubmission(data) {
     // Sort descending by score
     rows.sort((a, b) => b.score - a.score);
 
-    // Keep top 10
-    const top10 = rows.slice(0, 10);
+    // Keep top champions up to limit (1000)
+    const topChampions = rows.slice(0, maxLimit);
 
     // Clear existing data rows (keep header row 1)
     if (lastRow > 1) {
@@ -201,7 +203,7 @@ function handleSessionSubmission(data) {
     }
 
     // Write back updated sorted champions
-    const outputRows = top10.map((entry, index) => [
+    const outputRows = topChampions.map((entry, index) => [
       index + 1,
       entry.name,
       entry.score,
@@ -225,7 +227,7 @@ function handleSessionSubmission(data) {
 /**
  * Return Top Global Champions as JSON
  */
-function getLeaderboardResponse() {
+function getLeaderboardResponse(limit = 1000) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const champSheet = ss.getSheetByName("Global_Champions");
   let champions = [];
@@ -233,7 +235,8 @@ function getLeaderboardResponse() {
   if (champSheet) {
     const lastRow = champSheet.getLastRow();
     if (lastRow > 1) {
-      const data = champSheet.getRange(2, 1, lastRow - 1, 5).getValues();
+      const rowCount = Math.min(lastRow - 1, limit);
+      const data = champSheet.getRange(2, 1, rowCount, 5).getValues();
       champions = data.map(r => ({
         rank: r[0],
         name: r[1],

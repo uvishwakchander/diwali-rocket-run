@@ -693,7 +693,8 @@ class Game {
     }
 
     try {
-      const url = `${apiUrl}?action=get_leaderboard&t=${Date.now()}`;
+      const limit = (window.GAME_CONFIG && window.GAME_CONFIG.LEADERBOARD_LIMIT) || 1000;
+      const url = `${apiUrl}?action=get_leaderboard&limit=${limit}&t=${Date.now()}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -702,7 +703,7 @@ class Game {
         this.leaderboard = data.champions;
         localStorage.setItem('diwali_rocket_global_cache', JSON.stringify(this.leaderboard));
         if (statusEl) {
-          statusEl.innerHTML = '<span>⚡ Live Worldwide Leaderboard</span>';
+          statusEl.innerHTML = `<span>⚡ Live Worldwide Leaderboard (Top ${data.champions.length})</span>`;
         }
       }
     } catch (err) {
@@ -747,7 +748,7 @@ class Game {
     };
     this.leaderboard.push(localEntry);
     this.leaderboard.sort((a, b) => b.score - a.score);
-    const limit = (window.GAME_CONFIG && window.GAME_CONFIG.LEADERBOARD_LIMIT) || 10;
+    const limit = (window.GAME_CONFIG && window.GAME_CONFIG.LEADERBOARD_LIMIT) || 1000;
     this.leaderboard = this.leaderboard.slice(0, limit);
     localStorage.setItem('diwali_rocket_leaderboard', JSON.stringify(this.leaderboard));
 
@@ -765,7 +766,8 @@ class Game {
           coins: this.coins.toString(),
           flightTime: flightSeconds.toString(),
           fuelRemaining: Math.round(this.player.fuel).toString(),
-          device: platform
+          device: platform,
+          limit: limit.toString()
         });
 
         // Use GET parameter transmission to prevent CORS issues with Google Apps Script

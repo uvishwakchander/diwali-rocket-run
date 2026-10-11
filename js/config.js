@@ -20,7 +20,7 @@ window.GAME_CONFIG = {
   API_URL: "https://script.google.com/macros/s/AKfycbzBRoQZShYAsXAOtqwggfEKfjvVfPWeBClorOE4-PZQ8kFQzY3e4UwHlEaGrSpS-LOd1w/exec",
 
   // Leaderboard display settings
-  LEADERBOARD_LIMIT: 10,
+  LEADERBOARD_LIMIT: 1000,
   DEFAULT_NAME: "Festive Pilot",
 
   // GitHub Repository URL

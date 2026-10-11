@@ -815,9 +815,25 @@ html, body {
   flex-direction: column;
   gap: 8px;
   margin: 10px 0 16px 0;
-  max-height: 280px;
+  max-height: 360px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-gold) rgba(0, 0, 0, 0.3);
+}
+
+.leaderboard-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.leaderboard-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.leaderboard-list::-webkit-scrollbar-thumb {
+  background: var(--primary-gold);
+  border-radius: 4px;
 }
 
 .leaderboard-entry {
